@@ -23,6 +23,9 @@ import stem.process
 from stem import Signal
 from stem.control import Controller
 
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support import expected_conditions as EC
 # custom patch libraries
 from patch import download_latest_chromedriver, webdriver_folder_name
 
@@ -117,58 +120,63 @@ if __name__ == "__main__":
     
     # main program
     # auto locate recaptcha frames
-    try:
-        delay()
-        frames = driver.find_elements_by_tag_name("iframe")
-        recaptcha_control_frame = None
-        recaptcha_challenge_frame = None
-        for index, frame in enumerate(frames):
-            if re.search('reCAPTCHA', frame.get_attribute("title")):
-                recaptcha_control_frame = frame
-                
-            if re.search('recaptcha challenge', frame.get_attribute("title")):
-                recaptcha_challenge_frame = frame
-        if not (recaptcha_control_frame and recaptcha_challenge_frame):
-            print("[ERR] Unable to find recaptcha. Abort solver.")
-            sys.exit()
-        # switch to recaptcha frame
-        delay()
-        frames = driver.find_elements_by_tag_name("iframe")
-        driver.switch_to.frame(recaptcha_control_frame)
-        # click on checkbox to activate recaptcha
-        driver.find_element_by_class_name("recaptcha-checkbox-border").click()
-    
-        # switch to recaptcha audio control frame
-        delay()
-        driver.switch_to.default_content()
-        frames = driver.find_elements_by_tag_name("iframe")
-        driver.switch_to.frame(recaptcha_challenge_frame)
-    
-        # click on audio challenge
-        time.sleep(10)
-        driver.find_element_by_id("recaptcha-audio-button").click()
-    
-        # switch to recaptcha audio challenge frame
-        driver.switch_to.default_content()
-        frames = driver.find_elements_by_tag_name("iframe")
-        driver.switch_to.frame(recaptcha_challenge_frame)
-    
-        # get the mp3 audio file
-        delay()
-        src = driver.find_element_by_id("audio-source").get_attribute("src")
-        print(f"[INFO] Audio src: {src}")
-    
-        path_to_mp3 = os.path.normpath(os.path.join(os.getcwd(), "sample.mp3"))
-        path_to_wav = os.path.normpath(os.path.join(os.getcwd(), "sample.wav"))
-    
-        # download the mp3 audio file from the source
-        urllib.request.urlretrieve(src, path_to_mp3)
-    except:
-        # if ip is blocked.. renew tor ip
-        print("[INFO] IP address has been blocked for recaptcha.")
-        if activate_tor:
-            renew_ip(CONTROL_PORT)
-        sys.exit()    
+    # try:
+    delay()
+    frames = driver.find_elements_by_tag_name("iframe")
+    recaptcha_control_frame = None
+    recaptcha_challenge_frame = None
+    for index, frame in enumerate(frames):
+        if re.search('reCAPTCHA', frame.get_attribute("title")):
+            recaptcha_control_frame = frame
+            
+        if re.search('recaptcha challenge', frame.get_attribute("title")) or re.search('текущую проверку reCAPTCHA можно пройти в течение ещё двух минут', frame.get_attribute("title")):
+            recaptcha_challenge_frame = frame
+            
+    if not (recaptcha_control_frame and recaptcha_challenge_frame):
+        print("[ERR] Unable to find recaptcha. Abort solver.")
+        sys.exit()
+    # switch to recaptcha frame
+    delay()
+    # frames = driver.find_elements_by_tag_name("iframe")
+    # driver.switch_to.frame(recaptcha_control_frame)
+    # # click on checkbox to activate recaptcha
+    # driver.find_element_by_class_name("recaptcha-checkbox-border").click()
+
+    WebDriverWait(driver, 20).until(EC.frame_to_be_available_and_switch_to_it((By.CSS_SELECTOR,"iframe[src^='https://www.google.com/recaptcha/api2/anchor']")))
+    WebDriverWait(driver, 20).until(EC.element_to_be_clickable((By.CSS_SELECTOR, "div.recaptcha-checkbox-border"))).click()
+
+
+    # switch to recaptcha audio control frame
+    delay()
+    driver.switch_to.default_content()
+    frames = driver.find_elements_by_tag_name("iframe")
+    driver.switch_to.frame(recaptcha_challenge_frame)
+
+    # click on audio challenge
+    time.sleep(10)
+    driver.find_element_by_id("recaptcha-audio-button").click()
+
+    # switch to recaptcha audio challenge frame
+    driver.switch_to.default_content()
+    frames = driver.find_elements_by_tag_name("iframe")
+    driver.switch_to.frame(recaptcha_challenge_frame)
+
+    # get the mp3 audio file
+    delay()
+    src = driver.find_element_by_id("audio-source").get_attribute("src")
+    print(f"[INFO] Audio src: {src}")
+
+    path_to_mp3 = os.path.normpath(os.path.join(os.getcwd(), "sample.mp3"))
+    path_to_wav = os.path.normpath(os.path.join(os.getcwd(), "sample.wav"))
+
+    # download the mp3 audio file from the source
+    urllib.request.urlretrieve(src, path_to_mp3)
+    # except:
+    #     # if ip is blocked.. renew tor ip
+    #     print("[INFO] IP address has been blocked for recaptcha.")
+    #     if activate_tor:
+    #         renew_ip(CONTROL_PORT)
+    #     sys.exit()    
 
     # load downloaded mp3 audio file as .wav
     try:

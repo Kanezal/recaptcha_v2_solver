@@ -2,3 +2,5 @@
 *.pyc
 sample.mp3
 sample.wav
+.venv/
+chromedriver.exe

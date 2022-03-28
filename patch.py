@@ -1,10 +1,3 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Sun May 23 14:44:43 2021
-
-@author: Yicong
-"""
-# !/usr/bin/env python3
 import os
 import re
 import stat
